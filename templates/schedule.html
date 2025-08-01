@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Project Schedule - Smart Project Allocation{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="main-content">
+            <h1 class="mb-4">
+                <i class="fas fa-calendar-alt me-3"></i>Project Schedule & Timeline
+            </h1>
+
+            {% if schedule_data %}
+            <!-- Schedule Overview -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-chart-gantt me-2"></i>Active Projects Timeline</h5>
+                    <div class="row">
+                        {% for item in schedule_data %}
+                        <div class="col-12 mb-3">
+                            <div class="project-timeline">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="mb-1">{{ item.project.name }}</h6>
+                                        <small>{{ item.project.start_date.strftime('%m/%d/%Y') }} - {{ item.project.end_date.strftime('%m/%d/%Y') }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-white text-dark">{{ item.duration_days }} days</span>
+                                        <br>
+                                        <small>{{ item.employees|length }}/{{ item.project.team_size }} team members</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Progress Bar -->
+                                {% set total_days = (item.project.end_date - item.project.start_date).days %}
+                                {% set progress = 25 %}  <!-- Sample progress for demo purposes -->
+                                
+                                <div class="progress mb-2" style="height: 10px;">
+                                    <div class="progress-bar bg-white" style="width: {{ progress|round|int }}%"></div>
+                                </div>
+                                
+                                <!-- Team Members -->
+                                <div>
+                                    <strong>Team:</strong>
+                                    {% for employee in item.employees %}
+                                        <span class="badge bg-white text-dark me-1">{{ employee.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Schedule Cards -->
+            <div class="row">
+                {% for item in schedule_data %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ item.project.name }}</h5>
+                            <p class="text-muted small mb-3">{{ item.project.description[:100] }}...</p>
+                            
+                            <!-- Timeline Info -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Start:</small>
+                                    <small>{{ item.project.start_date.strftime('%m/%d/%Y') }}</small>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">End:</small>
+                                    <small>{{ item.project.end_date.strftime('%m/%d/%Y') }}</small>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Duration:</small>
+                                    <small>{{ item.duration_days }} days</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Team Info -->
+                            <div class="mb-3">
+                                <small class="text-muted">Assigned Team ({{ item.employees|length }}/{{ item.project.team_size }}):</small>
+                                <div class="mt-2">
+                                    {% for employee in item.employees %}
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small>{{ employee.name }}</small>
+                                        <span class="badge availability-{{ employee.availability.lower().replace(' ', '') }} small">
+                                            {{ employee.availability.split()[0] }}
+                                        </span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Status and Priority -->
+                            <div class="d-flex justify-content-between">
+                                <span class="badge bg-{{ 'success' if item.project.status == 'Active' else 'primary' if item.project.status == 'Planning' else 'secondary' }}">
+                                    {{ item.project.status }}
+                                </span>
+                                <span class="badge bg-{{ 'danger' if item.project.priority == 'Critical' else 'warning' if item.project.priority == 'High' else 'info' }}">
+                                    {{ item.project.priority }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Schedule Management Tools -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-tools me-2"></i>Schedule Management</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-plus fa-2x text-primary mb-2"></i>
+                                    <h6>Add New Project</h6>
+                                    <small class="text-muted">Create and schedule new projects</small>
+                                    <br>
+                                    <a href="{{ url_for('add_project') }}" class="btn btn-primary btn-sm mt-2">
+                                        <i class="fas fa-plus me-1"></i>Create
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users fa-2x text-success mb-2"></i>
+                                    <h6>Team Optimization</h6>
+                                    <small class="text-muted">Reassign teams for better efficiency</small>
+                                    <br>
+                                    <a href="{{ url_for('projects') }}" class="btn btn-success btn-sm mt-2">
+                                        <i class="fas fa-search me-1"></i>Optimize
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                                    <h6>Resource Analysis</h6>
+                                    <small class="text-muted">View team utilization metrics</small>
+                                    <br>
+                                    <a href="{{ url_for('employees') }}" class="btn btn-warning btn-sm mt-2">
+                                        <i class="fas fa-chart-bar me-1"></i>Analyze
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-times text-muted" style="font-size: 4rem;"></i>
+                <h3 class="mt-3 text-muted">No Active Projects</h3>
+                <p class="text-muted">Create and assign teams to projects to see them in the schedule.</p>
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{{ url_for('add_project') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Project
+                    </a>
+                    <a href="{{ url_for('projects') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-2"></i>Assign Teams
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add some interactive features for the schedule
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to project timeline cards
+    const timelineCards = document.querySelectorAll('.project-timeline');
+    timelineCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+            this.style.transition = 'transform 0.3s ease';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+});
+</script>
+{% endblock %}

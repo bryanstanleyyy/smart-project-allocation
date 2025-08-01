@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Add Project - Smart Project Allocation{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="main-content">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">
+                        <i class="fas fa-plus me-3"></i>Create New Project
+                    </h3>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Project Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Project Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" 
+                                placeholder="Describe the project goals, scope, and key deliverables..." required></textarea>
+                        </div>
+                        
+                        <!-- Required Skills Section -->
+                        <div class="mb-4">
+                            <label class="form-label">Required Skills *</label>
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Enter skills in format: "Python:High, React:Medium, SQL:Low" or use the form below
+                                </small>
+                            </div>
+                            <textarea class="form-control" id="required_skills" name="required_skills" rows="3" 
+                                      placeholder="Python:High, JavaScript:Medium, UI/UX Design:Low, SQL:Medium" required></textarea>
+                            
+                            <!-- Alternative skill input with dynamic rows -->
+                            <div class="mt-3">
+                                <small class="text-muted">Or add skills individually:</small>
+                                <div id="skills-container">
+                                    <div class="skill-row mb-2">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control" name="skill_names[]" 
+                                                       placeholder="Skill name (e.g., Python, React, Design)">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <select class="form-control" name="skill_importance[]">
+                                                    <option value="">Importance</option>
+                                                    <option value="Low">Low - Nice to have</option>
+                                                    <option value="Medium" selected>Medium - Important</option>
+                                                    <option value="High">High - Very important</option>
+                                                    <option value="Critical">Critical - Essential</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-outline-danger remove-skill">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="add-skill">
+                                    <i class="fas fa-plus me-2"></i>Add Required Skill
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="priority" class="form-label">Priority *</label>
+                                <select class="form-control" id="priority" name="priority" required>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium" selected>Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Critical">Critical</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="team_size" class="form-label">Team Size *</label>
+                                <input type="number" class="form-control" id="team_size" name="team_size" min="1" max="20" value="3" required>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="budget" class="form-label">Budget ($)</label>
+                                <input type="number" class="form-control" id="budget" name="budget" min="0" step="0.01" placeholder="50000.00">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_date" class="form-label">Start Date *</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-4">
+                                <label for="end_date" class="form-label">End Date *</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date" required>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('projects') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Create Project
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('start_date').min = today;
+    document.getElementById('end_date').min = today;
+    
+    // Set default start date to today
+    document.getElementById('start_date').value = today;
+    
+    // Update end date minimum when start date changes
+    document.getElementById('start_date').addEventListener('change', function() {
+        document.getElementById('end_date').min = this.value;
+    });
+    
+    // Skills management
+    const skillsContainer = document.getElementById('skills-container');
+    const addSkillBtn = document.getElementById('add-skill');
+    const skillsTextarea = document.getElementById('required_skills');
+    
+    // Add new skill row
+    addSkillBtn.addEventListener('click', function() {
+        const skillRow = document.createElement('div');
+        skillRow.className = 'skill-row mb-2';
+        skillRow.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" name="skill_names[]" 
+                           placeholder="Skill name (e.g., Python, React, Design)">
+                </div>
+                <div class="col-md-4">
+                    <select class="form-control" name="skill_importance[]">
+                        <option value="">Importance</option>
+                        <option value="Low">Low - Nice to have</option>
+                        <option value="Medium" selected>Medium - Important</option>
+                        <option value="High">High - Very important</option>
+                        <option value="Critical">Critical - Essential</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger remove-skill">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        skillsContainer.appendChild(skillRow);
+    });
+    
+    // Remove skill row
+    skillsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-skill') || e.target.closest('.remove-skill')) {
+            const skillRow = e.target.closest('.skill-row');
+            if (skillsContainer.children.length > 1) {
+                skillRow.remove();
+            } else {
+                alert('At least one required skill is needed.');
+            }
+        }
+    });
+    
+    // Skills input synchronization
+    function updateSkillsFromRows() {
+        const skillNames = document.querySelectorAll('input[name="skill_names[]"]');
+        const skillImportance = document.querySelectorAll('select[name="skill_importance[]"]');
+        const skills = [];
+        
+        for (let i = 0; i < skillNames.length; i++) {
+            const name = skillNames[i].value.trim();
+            const importance = skillImportance[i].value;
+            if (name && importance) {
+                skills.push(`${name}:${importance}`);
+            } else if (name) {
+                skills.push(`${name}:Medium`);
+            }
+        }
+        
+        if (skills.length > 0) {
+            skillsTextarea.value = skills.join(', ');
+        }
+    }
+    
+    // Listen for changes in skill rows
+    skillsContainer.addEventListener('input', updateSkillsFromRows);
+    skillsContainer.addEventListener('change', updateSkillsFromRows);
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const skillsText = skillsTextarea.value.trim();
+        const skillNames = document.querySelectorAll('input[name="skill_names[]"]');
+        
+        let hasSkills = skillsText.length > 0;
+        if (!hasSkills) {
+            // Check if any skill rows have data
+            for (let i = 0; i < skillNames.length; i++) {
+                if (skillNames[i].value.trim()) {
+                    hasSkills = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!hasSkills) {
+            e.preventDefault();
+            alert('Please add at least one required skill.');
+            return false;
+        }
+        
+        // Update skills from rows if textarea is empty
+        if (!skillsText && hasSkills) {
+            updateSkillsFromRows();
+        }
+        
+        // Date validation
+        const startDate = new Date(document.getElementById('start_date').value);
+        const endDate = new Date(document.getElementById('end_date').value);
+        
+        if (endDate <= startDate) {
+            e.preventDefault();
+            alert('End date must be after start date.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

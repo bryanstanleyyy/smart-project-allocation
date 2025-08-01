@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}AI Team Matching - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="main-content">
+            <!-- Project Info Header -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h2><i class="fas fa-brain me-3"></i>AI Team Matching</h2>
+                            <h4 class="text-primary">{{ project.name }}</h4>
+                            <p class="text-muted mb-3">{{ project.description }}</p>
+                        </div>
+                        <span class="badge bg-{{ 'danger' if project.priority == 'Critical' else 'warning' if project.priority == 'High' else 'info' }} fs-6">
+                            {{ project.priority }} Priority
+                        </span>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Required Skills:</strong>
+                            <div class="mt-2">
+                                {% for skill in project.get_required_skills() %}
+                                    <span class="badge-skill">{{ skill.name }} ({{ skill.importance }})</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Timeline:</strong><br>
+                            <small class="text-muted">
+                                {{ project.start_date.strftime('%B %d, %Y') }} - {{ project.end_date.strftime('%B %d, %Y') }}
+                            </small>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Team Size Needed:</strong> {{ project.team_size }} members
+                            {% if assigned_employees %}
+                                <br><small class="text-success">{{ assigned_employees|length }} currently assigned</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Team Section -->
+            {% if assigned_employees %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-users me-2"></i>Current Team Members
+                        <small class="text-muted">({{ assigned_employees|length }}/{{ project.team_size }})</small>
+                    </h5>
+                    <div class="row">
+                        {% for employee in assigned_employees %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card border-success h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title mb-1">{{ employee.name }}</h6>
+                                            <p class="text-muted small mb-2">
+                                                <i class="fas fa-building me-1"></i>{{ employee.department }}
+                                            </p>
+                                            <p class="text-muted small mb-2">
+                                                <i class="fas fa-calendar me-1"></i>{{ employee.experience_years }} years exp.
+                                            </p>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Assigned
+                                            </span>
+                                        </div>
+                                        <form method="POST" action="{{ url_for('remove_employee_from_project', project_id=project.id, employee_id=employee.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="return confirm('Remove {{ employee.name }} from this project?')"
+                                                    title="Remove {{ employee.name }} from project">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- AI Matching Results -->
+            <div class="card">
+                <div class="card-body">
+                    <!-- Loading State -->
+                    <div id="loadingState" class="text-center py-5" style="display: none;">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h5 class="text-muted">🤖 AI Analyzing Team Matches...</h5>
+                        <p class="text-muted">Gemini AI is evaluating employee compatibility</p>
+                        <div class="progress" style="height: 6px; max-width: 300px; margin: 0 auto;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 style="width: 0%" id="loadingProgress"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Results Header -->
+                    <div id="resultsHeader">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-robot me-2"></i>AI-Recommended Team Members
+                            <small class="text-muted">(Ranked by match score)</small>
+                        {% if matches and matches[0].get('ai_powered', False) %}
+                            {% if matches[0].get('ai_provider') == 'gemini' %}
+                                <span class="badge bg-success ms-2">
+                                    <i class="fas fa-star me-1"></i>Google Gemini AI
+                                </span>
+                            {% else %}
+                                <span class="badge bg-info ms-2">
+                                    <i class="fas fa-robot me-1"></i>AI Powered
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-secondary ms-2">
+                                <i class="fas fa-calculator me-1"></i>Algorithm-Based
+                            </span>
+                        {% endif %}
+                        </h5>
+                    </div>
+
+                    <!-- Results Content -->
+                    <div id="resultsContent">
+                    {% if matches %}
+                    <form method="POST" action="{{ url_for('assign_employees', project_id=project.id) }}">
+                        <div class="row">
+                            {% for match in matches %}
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card employee-card h-100 border-2 {% if match.get('is_assigned', False) %}border-success{% endif %}">
+                                    <div class="card-body">
+                                        <div class="form-check position-absolute" style="top: 15px; right: 15px;">
+                                            <input class="form-check-input" type="checkbox" name="employee_ids" 
+                                                   value="{{ match.employee.id }}" id="emp{{ match.employee.id }}"
+                                                   {% if match.get('is_assigned', False) %}checked{% endif %}>
+                                        </div>
+                                        
+                                        <!-- Match Score -->
+                                        <div class="text-center mb-3">
+                                            <div class="match-score match-{{ 'high' if match.percentage >= 70 else 'medium' if match.percentage >= 40 else 'low' }}">
+                                                {{ match.percentage|round|int }}% Match
+                                            </div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-{{ 'success' if match.percentage >= 70 else 'warning' if match.percentage >= 40 else 'danger' }}" 
+                                                     style="width: {{ match.percentage }}%"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Employee Info -->
+                                        <h6 class="card-title">{{ match.employee.name }}</h6>
+                                        <p class="text-muted small mb-2">
+                                            <i class="fas fa-building me-1"></i>{{ match.employee.department }}
+                                        </p>
+                                        <p class="text-muted small mb-3">
+                                            <i class="fas fa-calendar me-1"></i>{{ match.employee.experience_years }} years exp.
+                                        </p>
+                                        
+                                        <!-- Availability Status -->
+                                        <div class="mb-3">
+                                            {% if match.get('is_assigned', False) %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Currently Assigned
+                                                </span>
+                                            {% else %}
+                                                <span class="badge availability-{{ match.employee.availability.lower().replace(' ', '') }}">
+                                                    <i class="fas fa-circle me-1"></i>{{ match.employee.availability }}
+                                                </span>
+                                            {% endif %}
+                                            {% if match.get('workload_percentage', 0) > 0 %}
+                                                <span class="badge bg-info ms-1">
+                                                    {{ match.workload_percentage }}% loaded
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Matching Skills -->
+                                        <div class="mb-3">
+                                            <small class="text-muted">Relevant Skills:</small>
+                                            <div class="skills-container">
+                                                {% set employee_skills = match.employee.get_skills_list() %}
+                                                {% set required_skills = project.get_required_skills() %}
+                                                {% for emp_skill in employee_skills %}
+                                                    {% for req_skill in required_skills %}
+                                                        {% if emp_skill.name.lower() == req_skill.name.lower() %}
+                                                            <span class="badge bg-success text-white" title="{{ emp_skill.name }} ({{ emp_skill.proficiency }}/10) - {{ req_skill.importance }} importance">
+                                                                {{ emp_skill.name }} ({{ emp_skill.proficiency }}/10)
+                                                            </span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- AI Analysis -->
+                                        {% if match.get('ai_powered', False) and match.get('reasons') %}
+                                        <div class="mb-3">
+                                            <small class="text-muted">
+                                                <i class="fas fa-brain me-1"></i>AI Analysis:
+                                            </small>
+                                            <div class="mt-1">
+                                                {% for reason in match.reasons[:2] %}
+                                                    <div class="ai-reason">
+                                                        <i class="fas fa-check-circle text-success me-1"></i>
+                                                        <small>{{ reason }}</small>
+                                                    </div>
+                                                {% endfor %}
+                                                {% if match.get('concerns') %}
+                                                    {% for concern in match.concerns[:1] %}
+                                                        <div class="ai-concern">
+                                                            <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                                                            <small>{{ concern }}</small>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <!-- All Skills -->
+                                        <div>
+                                            <small class="text-muted">All Skills:</small>
+                                            <div class="skills-container">
+                                                {% for skill in match.employee.get_skills_list()[:4] %}
+                                                    <span class="badge bg-light text-dark small" title="{{ skill.name }} ({{ skill.proficiency }}/10)">{{ skill.name }}</span>
+                                                {% endfor %}
+                                                {% if match.employee.get_skills_list()|length > 4 %}
+                                                    <span class="badge bg-light text-dark small">+{{ match.employee.get_skills_list()|length - 4 }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <div>
+                                <a href="{{ url_for('projects') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Projects
+                                </a>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary me-2" onclick="clearAllSelections()">
+                                    <i class="fas fa-times me-2"></i>Clear All
+                                </button>
+                                <button type="button" class="btn btn-outline-primary me-2" onclick="selectTopMatches()">
+                                    <i class="fas fa-star me-2"></i>Select Top {{ project.team_size }}
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="assignButton">
+                                    <i class="fas fa-users me-2"></i>Assign Selected Members
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-search text-muted" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3 text-muted">No employees available</h4>
+                        <p class="text-muted">Add employees to the system to get AI-powered matching recommendations.</p>
+                        <a href="{{ url_for('add_employee') }}" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-2"></i>Add Employees
+                        </a>
+                    </div>
+                    {% endif %}
+                    </div> <!-- End resultsContent -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Show loading state if AI is enabled
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we have AI matches to show loading simulation
+    const hasAIMatches = {{ 'true' if matches and matches[0].get('ai_powered', False) else 'false' }};
+    const loadingState = document.getElementById('loadingState');
+    const resultsHeader = document.getElementById('resultsHeader');
+    const resultsContent = document.getElementById('resultsContent');
+    
+    if (hasAIMatches && performance.navigation.type === 1) { // Page was refreshed
+        // Show loading state briefly to indicate AI processing
+        loadingState.style.display = 'block';
+        resultsHeader.style.display = 'none';
+        resultsContent.style.display = 'none';
+        
+        // Simulate progress
+        let progress = 0;
+        const progressBar = document.getElementById('loadingProgress');
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 30;
+            if (progress > 100) progress = 100;
+            progressBar.style.width = progress + '%';
+            
+            if (progress >= 100) {
+                clearInterval(progressInterval);
+                setTimeout(() => {
+                    loadingState.style.display = 'none';
+                    resultsHeader.style.display = 'block';
+                    resultsContent.style.display = 'block';
+                }, 300);
+            }
+        }, 100);
+    }
+});
+
+function selectTopMatches() {
+    // Clear all selections first
+    const checkboxes = document.querySelectorAll('input[name="employee_ids"]');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+        updateCardVisual(cb);
+    });
+    
+    // Select top {{ project.team_size }} matches
+    const topCheckboxes = Array.from(checkboxes).slice(0, {{ project.team_size }});
+    topCheckboxes.forEach(cb => {
+        cb.checked = true;
+        updateCardVisual(cb);
+    });
+    
+    updateSelectionCount();
+}
+
+function clearAllSelections() {
+    const checkboxes = document.querySelectorAll('input[name="employee_ids"]');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+        updateCardVisual(cb);
+    });
+    updateSelectionCount();
+}
+
+function updateCardVisual(checkbox) {
+    const card = checkbox.closest('.card');
+    if (checkbox.checked) {
+        card.classList.add('border-primary');
+        card.style.boxShadow = '0 4px 15px rgba(52, 152, 219, 0.3)';
+    } else {
+        card.classList.remove('border-primary');
+        if (!card.classList.contains('border-success')) {
+            card.style.boxShadow = '';
+        }
+    }
+}
+
+function updateSelectionCount() {
+    const checkedBoxes = document.querySelectorAll('input[name="employee_ids"]:checked');
+    const submitButton = document.getElementById('assignButton');
+    const selectionCounter = document.getElementById('selectionCounter');
+    const selectionText = document.getElementById('selectionText');
+    const teamSize = {{ project.team_size }};
+    
+    // Update submit button
+    if (submitButton) {
+        if (checkedBoxes.length === 0) {
+            submitButton.innerHTML = `<i class="fas fa-users me-2"></i>Select Members to Assign`;
+            submitButton.disabled = true;
+        } else {
+            submitButton.innerHTML = `<i class="fas fa-users me-2"></i>Assign Selected Members (${checkedBoxes.length}/${teamSize})`;
+            submitButton.disabled = false;
+        }
+        
+        if (checkedBoxes.length > teamSize) {
+            submitButton.classList.add('btn-warning');
+            submitButton.classList.remove('btn-primary', 'btn-success');
+        } else if (checkedBoxes.length === teamSize && checkedBoxes.length > 0) {
+            submitButton.classList.add('btn-success');
+            submitButton.classList.remove('btn-primary', 'btn-warning');
+        } else {
+            submitButton.classList.add('btn-primary');
+            submitButton.classList.remove('btn-warning', 'btn-success');
+        }
+        
+        // Update button style based on disabled state
+        if (submitButton.disabled) {
+            submitButton.classList.add('btn-secondary');
+            submitButton.classList.remove('btn-primary', 'btn-warning', 'btn-success');
+        }
+    }
+    
+    // Update floating counter
+    if (selectionCounter && selectionText) {
+        if (checkedBoxes.length > 0) {
+            selectionCounter.style.display = 'block';
+            selectionText.textContent = `${checkedBoxes.length}/${teamSize} selected`;
+            
+            if (checkedBoxes.length > teamSize) {
+                selectionCounter.style.background = 'var(--accent-color)';
+                selectionText.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>${checkedBoxes.length}/${teamSize} selected (Over limit!)`;
+            } else if (checkedBoxes.length === teamSize) {
+                selectionCounter.style.background = 'var(--success-color)';
+                selectionText.innerHTML = `<i class="fas fa-check me-2"></i>${checkedBoxes.length}/${teamSize} selected (Perfect!)`;
+            } else {
+                selectionCounter.style.background = 'var(--primary-color)';
+                selectionText.innerHTML = `<i class="fas fa-users me-2"></i>${checkedBoxes.length}/${teamSize} selected`;
+            }
+        } else {
+            selectionCounter.style.display = 'none';
+        }
+    }
+}
+
+// Add visual feedback for selected employees
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[name="employee_ids"]');
+    
+    checkboxes.forEach(checkbox => {
+        // Initialize visual state
+        updateCardVisual(checkbox);
+        
+        checkbox.addEventListener('change', function() {
+            updateCardVisual(this);
+            updateSelectionCount();
+        });
+    });
+    
+    // Initial count update
+    updateSelectionCount();
+    
+    // Add warning for team size overflow and prevent empty submissions
+    const form = document.querySelector('form[action*="assign_employees"]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const checkedBoxes = document.querySelectorAll('input[name="employee_ids"]:checked');
+            const teamSize = {{ project.team_size }};
+            
+            // Prevent submission if no employees are selected
+            if (checkedBoxes.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one employee to assign.');
+                return false;
+            }
+            
+            // Warning for team size overflow
+            if (checkedBoxes.length > teamSize) {
+                if (!confirm(`You've selected ${checkedBoxes.length} employees for a team of ${teamSize}. This exceeds the team size limit. Continue anyway?`)) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_content %}
+<!-- Selection Counter -->
+<div id="selectionCounter" class="selection-count" style="display: none;">
+    <i class="fas fa-users me-2"></i>
+    <span id="selectionText">0 selected</span>
+</div>
+{% endblock %}

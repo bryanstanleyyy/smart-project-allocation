@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Add Employee - Smart Project Allocation{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="fas fa-user-plus me-3"></i>Add New Employee
+                </h2>
+                
+                <form method="POST" id="addEmployeeForm">
+                    <div class="row">
+                        <!-- Basic Information -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       placeholder="Enter full name" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       placeholder="email@company.com" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       placeholder="(555) 123-4567">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="department" class="form-label">Department <span class="text-danger">*</span></label>
+                                <select class="form-control" id="department" name="department" required>
+                                    <option value="">Select Department</option>
+                                    <option value="Engineering">Engineering</option>
+                                    <option value="Design">Design</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Sales">Sales</option>
+                                    <option value="Data Science">Data Science</option>
+                                    <option value="DevOps">DevOps</option>
+                                    <option value="Management">Management</option>
+                                    <option value="Quality Assurance">Quality Assurance</option>
+                                    <option value="Human Resources">Human Resources</option>
+                                    <option value="Finance">Finance</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="experience_years" class="form-label">Years of Experience <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="experience_years" name="experience_years" 
+                                       min="0" max="50" placeholder="5" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="hourly_rate" class="form-label">Hourly Rate ($)</label>
+                                <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" 
+                                       min="0" step="0.01" placeholder="75.00">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Availability -->
+                    <div class="mb-4">
+                        <label for="availability" class="form-label">Availability Status <span class="text-danger">*</span></label>
+                        <select class="form-control" id="availability" name="availability" required>
+                            <option value="">Select Availability</option>
+                            <option value="Available">Available</option>
+                            <option value="Partially Available">Partially Available</option>
+                            <option value="Busy">Busy</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Skills Section -->
+                    <div class="mb-4">
+                        <label class="form-label">Skills & Proficiency <span class="text-danger">*</span></label>
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Enter skills in format: "Python:8, React:7, SQL:9" or "Python, React, SQL" (defaults to 5/10)
+                            </small>
+                        </div>
+                        <textarea class="form-control" id="skills" name="skills" rows="3" 
+                                  placeholder="Python:8, JavaScript:7, React:6, SQL:9, Docker:5" required></textarea>
+                        
+                        <!-- Alternative skill input with dynamic rows -->
+                        <div class="mt-3">
+                            <small class="text-muted">Or add skills individually:</small>
+                            <div id="skills-container">
+                                <div class="skill-row mb-2">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control" name="skill_names[]" 
+                                                   placeholder="Skill name (e.g., Python, React)">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-control" name="skill_proficiencies[]">
+                                                <option value="">Proficiency</option>
+                                                <option value="1">1 - Beginner</option>
+                                                <option value="2">2 - Beginner</option>
+                                                <option value="3">3 - Beginner</option>
+                                                <option value="4">4 - Intermediate</option>
+                                                <option value="5" selected>5 - Intermediate</option>
+                                                <option value="6">6 - Intermediate</option>
+                                                <option value="7">7 - Advanced</option>
+                                                <option value="8">8 - Advanced</option>
+                                                <option value="9">9 - Expert</option>
+                                                <option value="10">10 - Expert</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-outline-danger remove-skill">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="add-skill">
+                                <i class="fas fa-plus me-2"></i>Add Another Skill
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('employees') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Add Employee
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const skillsContainer = document.getElementById('skills-container');
+    const addSkillBtn = document.getElementById('add-skill');
+    const skillsTextarea = document.getElementById('skills');
+    
+    // Add new skill row
+    addSkillBtn.addEventListener('click', function() {
+        const skillRow = document.createElement('div');
+        skillRow.className = 'skill-row mb-2';
+        skillRow.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" name="skill_names[]" 
+                           placeholder="Skill name (e.g., Python, React)">
+                </div>
+                <div class="col-md-4">
+                    <select class="form-control" name="skill_proficiencies[]">
+                        <option value="">Proficiency</option>
+                        <option value="1">1 - Beginner</option>
+                        <option value="2">2 - Beginner</option>
+                        <option value="3">3 - Beginner</option>
+                        <option value="4">4 - Intermediate</option>
+                        <option value="5" selected>5 - Intermediate</option>
+                        <option value="6">6 - Intermediate</option>
+                        <option value="7">7 - Advanced</option>
+                        <option value="8">8 - Advanced</option>
+                        <option value="9">9 - Expert</option>
+                        <option value="10">10 - Expert</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger remove-skill">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        skillsContainer.appendChild(skillRow);
+    });
+    
+    // Remove skill row
+    skillsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-skill') || e.target.closest('.remove-skill')) {
+            const skillRow = e.target.closest('.skill-row');
+            if (skillsContainer.children.length > 1) {
+                skillRow.remove();
+            } else {
+                alert('At least one skill is required.');
+            }
+        }
+    });
+    
+    // Skills input synchronization
+    function updateSkillsFromRows() {
+        const skillNames = document.querySelectorAll('input[name="skill_names[]"]');
+        const skillProfs = document.querySelectorAll('select[name="skill_proficiencies[]"]');
+        const skills = [];
+        
+        for (let i = 0; i < skillNames.length; i++) {
+            const name = skillNames[i].value.trim();
+            const prof = skillProfs[i].value;
+            if (name && prof) {
+                skills.push(`${name}:${prof}`);
+            } else if (name) {
+                skills.push(`${name}:5`);
+            }
+        }
+        
+        if (skills.length > 0) {
+            skillsTextarea.value = skills.join(', ');
+        }
+    }
+    
+    // Listen for changes in skill rows
+    skillsContainer.addEventListener('input', updateSkillsFromRows);
+    skillsContainer.addEventListener('change', updateSkillsFromRows);
+    
+    // Form validation
+    document.getElementById('addEmployeeForm').addEventListener('submit', function(e) {
+        const skillsText = skillsTextarea.value.trim();
+        const skillNames = document.querySelectorAll('input[name="skill_names[]"]');
+        
+        let hasSkills = skillsText.length > 0;
+        if (!hasSkills) {
+            // Check if any skill rows have data
+            for (let i = 0; i < skillNames.length; i++) {
+                if (skillNames[i].value.trim()) {
+                    hasSkills = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!hasSkills) {
+            e.preventDefault();
+            alert('Please add at least one skill.');
+            return false;
+        }
+        
+        // Update skills from rows if textarea is empty
+        if (!skillsText && hasSkills) {
+            updateSkillsFromRows();
+        }
+    });
+    
+    // Email validation
+    document.getElementById('email').addEventListener('blur', function() {
+        const email = this.value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (email && !emailRegex.test(email)) {
+            this.setCustomValidity('Please enter a valid email address.');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+});
+</script>
+{% endblock %}

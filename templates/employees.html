@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Employees - Smart Project Allocation{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-users me-3"></i>Employee Directory</h1>
+                <a href="{{ url_for('add_employee') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Add Employee
+                </a>
+            </div>
+
+            <div class="row">
+                {% for employee in employees %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card employee-card h-100" onclick="showEmployeeDetails({{ employee.id }})">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">{{ employee.name }}</h5>
+                                <span class="badge availability-{{ employee.availability.lower().replace(' ', '') }}">
+                                    <i class="fas fa-circle me-1"></i>{{ employee.availability }}
+                                </span>
+                            </div>
+                            
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-building me-2"></i>{{ employee.department }}
+                            </p>
+                            
+                            <p class="text-muted mb-3">
+                                <i class="fas fa-calendar me-2"></i>{{ employee.experience_years }} years experience
+                            </p>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">Key Skills:</small>
+                                <div class="skills-container">
+                                    {% for skill in employee.get_skills_list()[:3] %}
+                                        <span class="badge-skill" title="{{ skill.name }} ({{ skill.proficiency }}/10)">{{ skill.name }}</span>
+                                    {% endfor %}
+                                    {% if employee.get_skills_list()|length > 3 %}
+                                        <span class="badge bg-light text-dark">+{{ employee.get_skills_list()|length - 3 }} more</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="mailto:{{ employee.email }}" class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation()">
+                                    <i class="fas fa-envelope me-1"></i>Contact
+                                </a>
+                                <a href="{{ url_for('edit_employee', employee_id=employee.id) }}" class="btn btn-outline-secondary btn-sm" onclick="event.stopPropagation()">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); deleteEmployee({{ employee.id }}, '{{ employee.name }}')">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if not employees %}
+            <div class="text-center py-5">
+                <i class="fas fa-users text-muted" style="font-size: 4rem;"></i>
+                <h3 class="mt-3 text-muted">No employees found</h3>
+                <p class="text-muted">Start by adding your first employee to the system.</p>
+                <a href="{{ url_for('add_employee') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Add First Employee
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Employee Details Modal -->
+<div class="modal fade" id="employeeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Employee Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="employeeDetails">
+                <!-- Details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showEmployeeDetails(employeeId) {
+    fetch(`/api/employee/${employeeId}`)
+        .then(response => response.json())
+        .then(data => {
+            const skillsHtml = data.skills.map(skill => 
+                `<span class="badge-skill" title="${skill.name} (${skill.proficiency}/10)">${skill.name} (${skill.proficiency}/10)</span>`
+            ).join('');
+            
+            document.getElementById('employeeDetails').innerHTML = `
+                <div class="row">
+                    <div class="col-12">
+                        <h6><i class="fas fa-user me-2"></i>Contact Information</h6>
+                        <p><strong>Email:</strong> ${data.email}</p>
+                        <p><strong>Department:</strong> ${data.department}</p>
+                        <p><strong>Experience:</strong> ${data.experience_years} years</p>
+                        <p><strong>Availability:</strong> 
+                            <span class="badge availability-${data.availability.toLowerCase().replace(' ', '')}">${data.availability}</span>
+                        </p>
+                        
+                        <h6 class="mt-4"><i class="fas fa-cogs me-2"></i>Skills & Proficiency</h6>
+                        <div class="skills-container">
+                            ${skillsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('employeeModal'));
+            modal.show();
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function deleteEmployee(employeeId, employeeName) {
+    if (confirm(`Are you sure you want to delete ${employeeName}? This action cannot be undone.\n\nNote: If this employee has active project assignments, the deletion will be prevented.`)) {
+        // Create a form to submit DELETE request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/employees/${employeeId}/delete`;
+        form.style.display = 'none';
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

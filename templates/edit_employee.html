@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Employee - {{ employee.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="fas fa-user-edit me-3"></i>Edit Employee
+                </h2>
+                
+                <form method="POST" id="editEmployeeForm">
+                    <div class="row">
+                        <!-- Basic Information -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ employee.name }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ employee.email }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       value="{{ employee.phone or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="department" class="form-label">Department <span class="text-danger">*</span></label>
+                                <select class="form-control" id="department" name="department" required>
+                                    <option value="">Select Department</option>
+                                    <option value="Engineering" {% if employee.department == 'Engineering' %}selected{% endif %}>Engineering</option>
+                                    <option value="Design" {% if employee.department == 'Design' %}selected{% endif %}>Design</option>
+                                    <option value="Marketing" {% if employee.department == 'Marketing' %}selected{% endif %}>Marketing</option>
+                                    <option value="Sales" {% if employee.department == 'Sales' %}selected{% endif %}>Sales</option>
+                                    <option value="Data Science" {% if employee.department == 'Data Science' %}selected{% endif %}>Data Science</option>
+                                    <option value="DevOps" {% if employee.department == 'DevOps' %}selected{% endif %}>DevOps</option>
+                                    <option value="Management" {% if employee.department == 'Management' %}selected{% endif %}>Management</option>
+                                    <option value="Quality Assurance" {% if employee.department == 'Quality Assurance' %}selected{% endif %}>Quality Assurance</option>
+                                    <option value="Human Resources" {% if employee.department == 'Human Resources' %}selected{% endif %}>Human Resources</option>
+                                    <option value="Finance" {% if employee.department == 'Finance' %}selected{% endif %}>Finance</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="experience_years" class="form-label">Years of Experience <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="experience_years" name="experience_years" 
+                                       value="{{ employee.experience_years }}" min="0" max="50" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="hourly_rate" class="form-label">Hourly Rate ($)</label>
+                                <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" 
+                                       value="{{ employee.hourly_rate or 0 }}" min="0" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Availability -->
+                    <div class="mb-4">
+                        <label for="availability" class="form-label">Availability Status <span class="text-danger">*</span></label>
+                        <select class="form-control" id="availability" name="availability" required>
+                            <option value="Available" {% if employee.availability == 'Available' %}selected{% endif %}>Available</option>
+                            <option value="Partially Available" {% if employee.availability == 'Partially Available' %}selected{% endif %}>Partially Available</option>
+                            <option value="Busy" {% if employee.availability == 'Busy' %}selected{% endif %}>Busy</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Skills Section -->
+                    <div class="mb-4">
+                        <label class="form-label">Skills & Proficiency <span class="text-danger">*</span></label>
+                        <div id="skills-container">
+                            {% for skill in employee.get_skills_list() %}
+                            <div class="skill-row mb-2">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control" name="skill_names[]" 
+                                               placeholder="Skill name (e.g., Python, React)" 
+                                               value="{{ skill.name }}" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-control" name="skill_proficiencies[]" required>
+                                            <option value="">Proficiency</option>
+                                            {% for i in range(1, 11) %}
+                                            <option value="{{ i }}" {% if skill.proficiency == i %}selected{% endif %}>
+                                                {{ i }} - {% if i <= 3 %}Beginner{% elif i <= 6 %}Intermediate{% elif i <= 8 %}Advanced{% else %}Expert{% endif %}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-outline-danger remove-skill">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary" id="add-skill">
+                            <i class="fas fa-plus me-2"></i>Add Skill
+                        </button>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('employees') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Employee
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const skillsContainer = document.getElementById('skills-container');
+    const addSkillBtn = document.getElementById('add-skill');
+    
+    // Add new skill row
+    addSkillBtn.addEventListener('click', function() {
+        const skillRow = document.createElement('div');
+        skillRow.className = 'skill-row mb-2';
+        skillRow.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" name="skill_names[]" 
+                           placeholder="Skill name (e.g., Python, React)" required>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-control" name="skill_proficiencies[]" required>
+                        <option value="">Proficiency</option>
+                        <option value="1">1 - Beginner</option>
+                        <option value="2">2 - Beginner</option>
+                        <option value="3">3 - Beginner</option>
+                        <option value="4">4 - Intermediate</option>
+                        <option value="5">5 - Intermediate</option>
+                        <option value="6">6 - Intermediate</option>
+                        <option value="7">7 - Advanced</option>
+                        <option value="8">8 - Advanced</option>
+                        <option value="9">9 - Expert</option>
+                        <option value="10">10 - Expert</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger remove-skill">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        skillsContainer.appendChild(skillRow);
+    });
+    
+    // Remove skill row
+    skillsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-skill') || e.target.closest('.remove-skill')) {
+            const skillRow = e.target.closest('.skill-row');
+            if (skillsContainer.children.length > 1) {
+                skillRow.remove();
+            } else {
+                alert('At least one skill is required.');
+            }
+        }
+    });
+    
+    // Form validation
+    document.getElementById('editEmployeeForm').addEventListener('submit', function(e) {
+        const skillNames = document.querySelectorAll('input[name="skill_names[]"]');
+        const skillProfs = document.querySelectorAll('select[name="skill_proficiencies[]"]');
+        
+        let hasValidSkill = false;
+        for (let i = 0; i < skillNames.length; i++) {
+            if (skillNames[i].value.trim() && skillProfs[i].value) {
+                hasValidSkill = true;
+                break;
+            }
+        }
+        
+        if (!hasValidSkill) {
+            e.preventDefault();
+            alert('Please add at least one skill with proficiency level.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

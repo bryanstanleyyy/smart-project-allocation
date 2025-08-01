@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - Project Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="main-content">
+                <!-- Project Header -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h2><i class="fas fa-project-diagram me-3"></i>{{ project.name }}</h2>
+                                <p class="text-muted mb-3">{{ project.description }}</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 'success' if project.status == 'Active' else 'warning' if project.status == 'Planning' else 'info' }} fs-6 mb-2">
+                                    {{ project.status }}
+                                </span>
+                                <br>
+                                <span class="badge bg-{{ 'danger' if project.priority == 'Critical' else 'warning' if project.priority == 'High' else 'info' }} fs-6">
+                                    {{ project.priority }} Priority
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Timeline:</strong><br>
+                                <small class="text-muted">
+                                    {{ project.start_date.strftime('%B %d, %Y') }} - {{ project.end_date.strftime('%B %d, %Y') }}
+                                </small>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Team Size:</strong> {{ project.team_size }} members<br>
+                                <strong>Current Team:</strong> {{ assignments|length }} assigned
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Budget:</strong> ${{ "%.2f"|format(project.budget or 0) }}<br>
+                                <strong>Actual Cost:</strong> ${{ "%.2f"|format(actual_cost or 0) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Members -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-users me-2"></i>Team Members
+                            <a href="{{ url_for('match_employees', project_id=project.id) }}" class="btn btn-primary btn-sm float-end">
+                                <i class="fas fa-edit me-1"></i>Edit Team
+                            </a>
+                        </h5>
+                        
+                        {% if assignments %}
+                        <div class="row">
+                            {% for assignment in assignments %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-success">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ assignment.employee.name }}</h6>
+                                        <p class="text-muted small mb-2">
+                                            <i class="fas fa-user-tag me-1"></i>{{ assignment.role }}
+                                        </p>
+                                        <p class="text-muted small mb-2">
+                                            <i class="fas fa-building me-1"></i>{{ assignment.employee.department }}
+                                        </p>
+                                        <p class="text-muted small mb-2">
+                                            <i class="fas fa-percentage me-1"></i>{{ assignment.allocation_percentage }}% allocation
+                                        </p>
+                                        <span class="badge bg-success">
+                                            {{ assignment.status }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users text-muted" style="font-size: 2rem;"></i>
+                            <p class="text-muted mt-2">No team members assigned yet.</p>
+                            <a href="{{ url_for('match_employees', project_id=project.id) }}" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Find Team Members
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Project Statistics -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-chart-bar me-2"></i>Project Statistics
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 class="text-primary">{{ total_estimated_hours or 0 }}</h4>
+                                    <small class="text-muted">Estimated Hours</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 class="text-success">{{ total_actual_hours or 0 }}</h4>
+                                    <small class="text-muted">Actual Hours</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 class="text-info">${{ "%.2f"|format(estimated_cost or 0) }}</h4>
+                                    <small class="text-muted">Estimated Cost</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 class="text-warning">${{ "%.2f"|format(actual_cost or 0) }}</h4>
+                                    <small class="text-muted">Actual Cost</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('projects') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Projects
+                    </a>
+                    <a href="{{ url_for('match_employees', project_id=project.id) }}" class="btn btn-primary">
+                        <i class="fas fa-users me-2"></i>Manage Team
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

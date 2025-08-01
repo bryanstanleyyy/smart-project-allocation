@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Project - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="fas fa-project-diagram me-3"></i>Edit Project
+                </h2>
+                
+                <form method="POST" id="editProjectForm">
+                    <div class="row">
+                        <!-- Basic Information -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Project Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ project.name }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                                <select class="form-control" id="priority" name="priority" required>
+                                    <option value="Low" {% if project.priority == 'Low' %}selected{% endif %}>Low</option>
+                                    <option value="Medium" {% if project.priority == 'Medium' %}selected{% endif %}>Medium</option>
+                                    <option value="High" {% if project.priority == 'High' %}selected{% endif %}>High</option>
+                                    <option value="Critical" {% if project.priority == 'Critical' %}selected{% endif %}>Critical</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                                <select class="form-control" id="status" name="status" required>
+                                    <option value="Planning" {% if project.status == 'Planning' %}selected{% endif %}>Planning</option>
+                                    <option value="Active" {% if project.status == 'Active' %}selected{% endif %}>Active</option>
+                                    <option value="On Hold" {% if project.status == 'On Hold' %}selected{% endif %}>On Hold</option>
+                                    <option value="Completed" {% if project.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                    <option value="Cancelled" {% if project.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="team_size" class="form-label">Team Size <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="team_size" name="team_size" 
+                                       value="{{ project.team_size }}" min="1" max="20" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="budget" class="form-label">Budget ($)</label>
+                                <input type="number" class="form-control" id="budget" name="budget" 
+                                       value="{{ project.budget or 0 }}" min="0" step="0.01">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="start_date" class="form-label">Start Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" 
+                                       value="{{ project.start_date.strftime('%Y-%m-%d') if project.start_date else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="end_date" class="form-label">End Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" 
+                               value="{{ project.end_date.strftime('%Y-%m-%d') if project.end_date else '' }}" required>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-4">
+                        <label for="description" class="form-label">Project Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="description" name="description" rows="4" 
+                                  placeholder="Describe the project goals, objectives, and key requirements..." required>{{ project.description }}</textarea>
+                    </div>
+                    
+                    <!-- Required Skills Section -->
+                    <div class="mb-4">
+                        <label class="form-label">Required Skills <span class="text-danger">*</span></label>
+                        <div id="skills-container">
+                            {% for skill in project.get_required_skills() %}
+                            <div class="skill-row mb-2">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control" name="skill_names[]" 
+                                               placeholder="Skill name (e.g., Python, React, Design)" 
+                                               value="{{ skill.name }}" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-control" name="skill_importance[]" required>
+                                            <option value="">Importance</option>
+                                            <option value="Low" {% if skill.importance == 'Low' %}selected{% endif %}>Low - Nice to have</option>
+                                            <option value="Medium" {% if skill.importance == 'Medium' %}selected{% endif %}>Medium - Important</option>
+                                            <option value="High" {% if skill.importance == 'High' %}selected{% endif %}>High - Very important</option>
+                                            <option value="Critical" {% if skill.importance == 'Critical' %}selected{% endif %}>Critical - Essential</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-outline-danger remove-skill">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary" id="add-skill">
+                            <i class="fas fa-plus me-2"></i>Add Required Skill
+                        </button>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('projects') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Project
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const skillsContainer = document.getElementById('skills-container');
+    const addSkillBtn = document.getElementById('add-skill');
+    
+    // Add new skill row
+    addSkillBtn.addEventListener('click', function() {
+        const skillRow = document.createElement('div');
+        skillRow.className = 'skill-row mb-2';
+        skillRow.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" name="skill_names[]" 
+                           placeholder="Skill name (e.g., Python, React, Design)" required>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-control" name="skill_importance[]" required>
+                        <option value="">Importance</option>
+                        <option value="Low">Low - Nice to have</option>
+                        <option value="Medium">Medium - Important</option>
+                        <option value="High">High - Very important</option>
+                        <option value="Critical">Critical - Essential</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger remove-skill">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        skillsContainer.appendChild(skillRow);
+    });
+    
+    // Remove skill row
+    skillsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-skill') || e.target.closest('.remove-skill')) {
+            const skillRow = e.target.closest('.skill-row');
+            if (skillsContainer.children.length > 1) {
+                skillRow.remove();
+            } else {
+                alert('At least one required skill is needed.');
+            }
+        }
+    });
+    
+    // Date validation
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    
+    function validateDates() {
+        const startDate = new Date(startDateInput.value);
+        const endDate = new Date(endDateInput.value);
+        
+        if (startDate && endDate && endDate <= startDate) {
+            endDateInput.setCustomValidity('End date must be after start date.');
+        } else {
+            endDateInput.setCustomValidity('');
+        }
+    }
+    
+    startDateInput.addEventListener('change', validateDates);
+    endDateInput.addEventListener('change', validateDates);
+    
+    // Form validation
+    document.getElementById('editProjectForm').addEventListener('submit', function(e) {
+        const skillNames = document.querySelectorAll('input[name="skill_names[]"]');
+        const skillImportance = document.querySelectorAll('select[name="skill_importance[]"]');
+        
+        let hasValidSkill = false;
+        for (let i = 0; i < skillNames.length; i++) {
+            if (skillNames[i].value.trim() && skillImportance[i].value) {
+                hasValidSkill = true;
+                break;
+            }
+        }
+        
+        if (!hasValidSkill) {
+            e.preventDefault();
+            alert('Please add at least one required skill with importance level.');
+            return false;
+        }
+        
+        validateDates();
+        if (!endDateInput.checkValidity()) {
+            e.preventDefault();
+            alert('Please ensure the end date is after the start date.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

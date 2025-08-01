@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Projects - Smart Project Allocation{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-project-diagram me-3"></i>Project Management</h1>
+                <a href="{{ url_for('add_project') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>New Project
+                </a>
+            </div>
+
+            <div class="row">
+                {% for project in projects %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title">{{ project.name }}</h5>
+                                <div class="dropdown">
+                                    <span class="badge bg-{{ 'success' if project.status == 'Active' else 'warning' if project.status == 'Planning' else 'info' if project.status == 'On Hold' else 'primary' if project.status == 'Completed' else 'secondary' }} dropdown-toggle" 
+                                          style="cursor: pointer;" data-bs-toggle="dropdown" title="Click to change status">
+                                        {{ project.status }}
+                                    </span>
+                                    <ul class="dropdown-menu">
+                                        <li><h6 class="dropdown-header">Update Status</h6></li>
+                                        {% for status in ['Planning', 'Active', 'On Hold', 'Completed', 'Cancelled'] %}
+                                        {% if status != project.status %}
+                                        <li>
+                                            <form method="POST" action="{{ url_for('update_project_status', project_id=project.id) }}" style="display: inline;">
+                                                <input type="hidden" name="status" value="{{ status }}">
+                                                <button type="submit" class="dropdown-item">
+                                                    <span class="badge bg-{{ 'success' if status == 'Active' else 'warning' if status == 'Planning' else 'info' if status == 'On Hold' else 'primary' if status == 'Completed' else 'secondary' }} me-2">{{ status }}</span>
+                                                </button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <p class="card-text text-muted mb-3">{{ project.description[:100] }}...</p>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">Required Skills:</small>
+                                <div class="mt-1">
+                                    {% for skill in project.get_required_skills()[:3] %}
+                                        <span class="badge-skill">{{ skill.name }}</span>
+                                    {% endfor %}
+                                    {% if project.get_required_skills()|length > 3 %}
+                                        <span class="badge bg-light text-dark">+{{ project.get_required_skills()|length - 3 }} more</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Priority:</small>
+                                    <span class="badge bg-{{ 'danger' if project.priority == 'Critical' else 'warning' if project.priority == 'High' else 'info' }}">
+                                        {{ project.priority }}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small class="text-muted">Team Size:</small>
+                                    <small>{{ project.get_assigned_employees()|length }}/{{ project.team_size }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex gap-1 flex-wrap">
+                                <a href="{{ url_for('match_employees', project_id=project.id) }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-search me-1"></i>Find Team
+                                </a>
+                                {% if project.get_assigned_employees()|length > 0 %}
+                                <button class="btn btn-outline-info btn-sm" onclick="showProjectTeam({{ project.id }})">
+                                    <i class="fas fa-users"></i>
+                                </button>
+                                {% endif %}
+                                <a href="{{ url_for('edit_project', project_id=project.id) }}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteProject({{ project.id }}, '{{ project.name }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer bg-light">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                {{ project.start_date.strftime('%m/%d/%Y') }} - {{ project.end_date.strftime('%m/%d/%Y') }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if not projects %}
+            <div class="text-center py-5">
+                <i class="fas fa-project-diagram text-muted" style="font-size: 4rem;"></i>
+                <h3 class="mt-3 text-muted">No projects found</h3>
+                <p class="text-muted">Create your first project to start using AI-powered team matching.</p>
+                <a href="{{ url_for('add_project') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create First Project
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteProject(projectId, projectName) {
+    if (confirm(`Are you sure you want to delete "${projectName}"? This action cannot be undone.\n\nNote: If this project has active employee assignments, the deletion will be prevented.`)) {
+        // Create a form to submit DELETE request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/projects/${projectId}/delete`;
+        form.style.display = 'none';
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function showProjectTeam(projectId) {
+    // This function is called when clicking the team icon
+    // You can implement a modal showing team members or redirect to project detail
+    window.location.href = `/projects/${projectId}`;
+}
+</script>
+{% endblock %}
